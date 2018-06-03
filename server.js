@@ -1,6 +1,8 @@
 var express = require("express");
 var bodyParser = require("body-parser");
 var mongoose = require("mongoose");
+var request = require("request");
+var cheerio = require("cheerio");
 
 var PORT = 7000;
 
@@ -30,6 +32,37 @@ app.post("/sumbit", function(req, res) {
     .catch(function(err) {
       res.json(err);
     });
+});
+
+app.get("/scrape", function(req, res) {
+  request("https://www.ksl.com/", function(error, response, html) {
+
+    var $ = cheerio.load(html);
+
+    $(".headline").each(function(i, element) {
+      var a = $(this);
+
+      var title = a.children("h2").text().trim();
+      var link = a.children("h2").children("a").attr("href");
+      var summary = a.children("h5").text();
+
+      if (title && link) {
+        db.scrprData.insert({
+          title: title,
+          link: link,
+          summary: summary
+        },
+        function(err, inserted) {
+          if(err) {
+            console.log(err);
+          }
+          else {
+            console.log(inserted);
+          }
+        });
+      }
+    });
+  });
 });
 
 app.listen(PORT, function() {
